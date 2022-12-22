@@ -35,13 +35,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   /// Each time to start a speech recognition session
   void _startListening() async {
-    await _speechToText.listen(onResult: _onSpeechResult);
+    await _speechToText.listen(onResult: _onSpeechResult, onDevice: true);
     setState(() {});
   }
 
   /// Manually stop the active speech recognition session
   /// Note that there are also timeouts that each platform enforces
-  /// and the SpeechToText plugin supports setting timeouts on the
+  /// and the SpeechToText plugin supports setting timeouts on thef
   /// listen method.
   void _stopListening() async {
     await _speechToText.stop();
