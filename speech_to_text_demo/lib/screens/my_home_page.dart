@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
@@ -86,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Future<void> translateText(String recognizedWords) {
+  void translateText(String recognizedWords) {
     final translator = GoogleTranslator();
     final input = recognizedWords;
 
