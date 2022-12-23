@@ -1,23 +1,22 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'package:translator/translator.dart';
 import 'package:text_to_speech/text_to_speech.dart';
+import 'package:translator/translator.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
   final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
-  late Timer _timer;
   String _lastWords = '';
   String _convertedWords = '';
 
@@ -35,7 +34,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   /// Each time to start a speech recognition session
   void _startListening() async {
-    await _speechToText.listen(onResult: _onSpeechResult, onDevice: true);
+    setState(() => _convertedWords = '');
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+      onDevice: true,
+      listenFor: const Duration(seconds: 30),
+    );
     setState(() {});
   }
 
@@ -51,12 +55,10 @@ class _MyHomePageState extends State<MyHomePage> {
   /// This is the callback that the SpeechToText plugin calls when
   /// the platform returns recognized words.
   void _onSpeechResult(SpeechRecognitionResult result) {
-    setState(() {
-      _lastWords = result.recognizedWords;
-    });
-    // _timer = new Timer(const Duration(milliseconds: 2000), () {
-    translateText(_lastWords);
-    // });
+    setState(() => _lastWords = result.recognizedWords);
+    if (result.finalResult) {
+      translateText(_lastWords);
+    }
   }
 
   @override
@@ -88,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       // recognition is not yet ready or not supported on
                       // the target device
                       : _speechEnabled
-                          ? 'Tap the microphone to start listening...'
+                          ? 'Long press & hold the microphone to start listening...'
                           : 'Speech not available',
                 ),
               ),
@@ -104,12 +106,25 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed:
-            // If not yet listening for speech start, otherwise stop
-            _speechToText.isNotListening ? _startListening : _stopListening,
-        tooltip: 'Listen',
-        child: Icon(_speechToText.isNotListening ? Icons.mic_off : Icons.mic),
+      floatingActionButton: GestureDetector(
+        onLongPressDown: (details) {
+          _startListening();
+        },
+        onLongPressUp: () {
+          _stopListening();
+        },
+        onTap: _speechToText.isNotListening ? _startListening : _stopListening,
+        child: Container(
+          height: 70,
+          width: 70,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: kElevationToShadow[2],
+            color: Theme.of(context).primaryColor,
+          ),
+          child: Icon(_speechToText.isNotListening ? Icons.mic_off : Icons.mic,
+              color: Colors.white),
+        ),
       ),
     );
   }
@@ -119,19 +134,15 @@ class _MyHomePageState extends State<MyHomePage> {
     final input = recognizedWords;
 
     translator.translate(input, from: 'en', to: 'hi').then((result) {
-      print("RESULT :: ");
-      print(result);
-      setState(() {
-        _convertedWords = result.toString();
-      });
-      print("CONVERTED WORDS :: ");
-      print(_convertedWords);
+      if (kDebugMode) print("RESULT :: $result");
+      setState(() => _convertedWords = result.toString());
+      if (kDebugMode) print("CONVERTED WORDS :: $_convertedWords");
       TextToSpeech tts = TextToSpeech();
-      tts.speak(_convertedWords);
       tts.setVolume(1);
       tts.setRate(1);
       tts.setPitch(1);
       tts.setLanguage('hi');
+      tts.speak(_convertedWords);
     });
 
     // // Passing the translation to a variable
